@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 class RedPortal extends StatefulWidget {
   RedPortal({Key? key}) : super(key: key);
@@ -10,19 +10,7 @@ class RedPortal extends StatefulWidget {
 }
 
 class _RedPortalState extends State<RedPortal> {
-  final flutterWebviewPlugin = FlutterWebviewPlugin();
-
-  @override
-  void initState() {
-    super.initState();
-    flutterWebviewPlugin.onBack.listen((_) async {
-      if (await flutterWebviewPlugin.canGoBack()) {
-        flutterWebviewPlugin.goBack();
-      } else {
-        Navigator.of(context).pop();
-      }
-    });
-  }
+  late InAppWebViewController _webViewController;
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +22,8 @@ class _RedPortalState extends State<RedPortal> {
           child: IconButton(
             icon: Icon(Icons.arrow_back, size: 25),
             onPressed: () async {
-              if (await flutterWebviewPlugin.canGoBack()) {
-                flutterWebviewPlugin.goBack();
+              if (await _webViewController.canGoBack()) {
+                _webViewController.goBack();
               } else {
                 Navigator.of(context).pop();
               }
@@ -45,16 +33,34 @@ class _RedPortalState extends State<RedPortal> {
         toolbarHeight: 40.0,
       ),
       body: SafeArea(
-        child: WebviewScaffold(
-          url: 'https://redportal.rs',
-          withZoom: true,
-          scrollBar: false,
-          withLocalStorage: true,
-          withJavascript: true,
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(0.0),
-            child: Container(),
+        child: InAppWebView(
+          initialUrlRequest: URLRequest(
+            url: Uri.parse('https://redportal.rs'),
           ),
+          initialOptions: InAppWebViewGroupOptions(
+            crossPlatform: InAppWebViewOptions(
+              useOnDownloadStart: true,
+              javaScriptEnabled: true,
+              cacheEnabled: true,
+            ),
+          ),
+          onWebViewCreated: (InAppWebViewController controller) {
+            _webViewController = controller;
+          },
+          onLoadStart: (InAppWebViewController controller, Uri? url) {
+            if (url != null &&
+                url.toString().startsWith('https://redportal.rs')) {
+              SystemChrome.setSystemUIOverlayStyle(
+                  SystemUiOverlayStyle.dark.copyWith(
+                statusBarColor: Colors.transparent,
+              ));
+            } else {
+              SystemChrome.setSystemUIOverlayStyle(
+                  SystemUiOverlayStyle.light.copyWith(
+                statusBarColor: Colors.transparent,
+              ));
+            }
+          },
         ),
       ),
     );
